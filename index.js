@@ -51,6 +51,14 @@ async function run() {
         res.send(result)
       })
 
+    app.get('/tech', async (req,res)=> {
+        const result = await techcollection.find().toArray()
+        res.send(result)
+    })
+
+
+    // user api  
+
 
     app.post('/users',  async(req,res)=> {
         const user = req.body
