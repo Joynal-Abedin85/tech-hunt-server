@@ -29,6 +29,8 @@ async function run() {
     const techcollection = client.db("tech-hub").collection("tech");
     const usercollection = client.db("tech-hub").collection("users");
 
+    // jwt api 
+
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -37,16 +39,48 @@ async function run() {
       res.send({ token });
     });
 
+    // middleware 
+
+    const verifytoken = (req,res,next) => {
+        console.log('inside',req.headers.authorization)
+        if(!req.headers.authorization){
+          return res.status(401).send({message: 'forbidden access'})
+        }
+        const token = req.headers.authorization.split(' ')[1];
+        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+          if(err){
+            return res.status(401).send({message: 'forbidden access'})
+          }
+          req.decoded = decoded;
+          next()
+        })
+        // next()
+      }
+  
+  
+      const verifyadmin = async (req,res,next) => {
+        const email = req.decoded.email;
+        const query = {email: email};
+        const user = await usercollection.findOne(query);
+        const isadmin = user?.role === 'admin';
+        if(!isadmin){
+          return res.status(403).send({message: 'forbidden access'})
+        }
+        next()
+      }
+
     // tech api
 
     app.post("/tech", async (req, res) => {
       const item = req.body;
+      item.timestamp = new Date();
+
       const result = await techcollection.insertOne(item);
       res.send(result);
     });
 
     app.get("/tech", async (req, res) => {
-      const result = await techcollection.find().toArray();
+      const result = await techcollection.find().sort({ timestamp: -1 }).toArray();
       res.send(result);
     });
 
@@ -65,12 +99,12 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/users", async (req, res) => {
+    app.get("/users",verifytoken, async (req, res) => {
       const result = await usercollection.find().toArray();
       res.send(result);
     });
 
-    app.patch('/users/admin/:id',async (req,res) => {
+    app.patch('/users/admin/:id', verifytoken ,async (req,res) => {
         const id = req.params.id;
         const filter = {_id: new ObjectId(id)};
         const updatedDoc = {
@@ -82,7 +116,7 @@ async function run() {
         res.send(result)
       })
 
-      app.get('/users/admin/:email',  async (req,res) => {
+      app.get('/users/admin/:email', verifytoken,  async (req,res) => {
         const email = req.params.email;
         if ( email !== req.decoded.email){
           return res.status(403).send({message: 'unauthorized access'})
