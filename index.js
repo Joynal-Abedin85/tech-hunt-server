@@ -84,6 +84,36 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/tech/:id', async(req,res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await techcollection.findOne(query)
+      res.send(result)
+    })
+
+    // app.get('/tech/:owneremail',verifytoken,  async (req, res) => {
+    //   try {
+    //     // Extract the owner email from params and decoded token
+    //     const owneremail = req.params.owneremail;
+    //     const decodedEmail = req.decoded?.email;
+    
+    //     // Verify that the email in the token matches the email in the request
+    //     if (owneremail !== decodedEmail) {
+    //       return res.status(403).send({ message: "Forbidden access" });
+    //     }
+    
+    //     // Query only the documents where owneremail matches
+    //     const query = { owneremail: owneremail };
+    //     const result = await techcollection.find(query).toArray();
+    
+    //     // Send the filtered data
+    //     res.status(200).send(result);
+    //   } catch (error) {
+    //     console.error("Error fetching data:", error);
+    //     res.status(500).send({ message: "An error occurred while fetching data." });
+    //   }
+    // });
+
     // user api
 
     app.post("/users", async (req, res) => {
