@@ -160,6 +160,30 @@ async function run() {
     });
 
 
+    app.get('/reviews/:proid', async (req, res) => {
+      const { proid } = req.params;
+    
+      try {
+        // Validate proid as a valid ObjectId
+        if (!ObjectId.isValid(proid)) {
+          return res.status(400).send({ message: 'Invalid proid format' });
+        }
+    
+        // Query to filter reviews by proid
+        const query = { proid: proid };
+        const reviews = await reviewcollection.find(query).toArray();
+    
+        // If no reviews are found
+        if (reviews.length === 0) {
+          return res.status(404).send({ message: 'No reviews found for this product' });
+        }
+    
+        res.status(200).send(reviews);
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+        res.status(500).send({ message: 'Internal server error', error });
+      }
+    });
     
     
     
