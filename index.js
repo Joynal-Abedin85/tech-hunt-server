@@ -118,34 +118,13 @@ async function run() {
 
 
 
+
+
+
     
 
+  //  review 
    
-    //   try {
-    //     // Extract the owner email from params and decoded token
-    //     const owneremail = req.params.owneremail;
-    //     const decodedEmail = req.decoded?.email;
-    
-    //     // Verify that the email in the token matches the email in the request
-    //     if (owneremail !== decodedEmail) {
-    //       return res.status(403).send({ message: "Forbidden access" });
-    //     }
-    
-    //     // Query only the documents where owneremail matches
-    //     const query = { owneremail: owneremail };
-    //     const result = await techcollection.find(query).toArray();
-    
-    //     // Send the filtered data
-    //     res.status(200).send(result);
-    //   } catch (error) {
-    //     console.error("Error fetching data:", error);
-    //     res.status(500).send({ message: "An error occurred while fetching data." });
-    //   }
-    // });
-
-
-    // review apis 
-
     app.post("/reviews", async (req, res) => {
       const item = req.body;
       item.timestamp = new Date();
@@ -190,53 +169,53 @@ async function run() {
 
     // vote apis
 
-    app.post("/tech/upvote/:id",verifytoken, async (req, res) => {
-      const productId = req.params.id;
-      const userEmail = req.body.email;
+    // app.post("/tech/upvote/:id",verifytoken, async (req, res) => {
+    //   const productId = req.params.id;
+    //   const userEmail = req.body.email;
     
-      if (!ObjectId.isValid(productId)) {
-        return res.status(400).send({ message: "Invalid product ID" });
-      }
+    //   if (!ObjectId.isValid(productId)) {
+    //     return res.status(400).send({ message: "Invalid product ID" });
+    //   }
     
-      try {
-        // Check if the user has already upvoted the product
-        const product = await techcollection.findOne({ _id: new ObjectId(productId) });
+    //   try {
+    //     // Check if the user has already upvoted the product
+    //     const product = await techcollection.findOne({ _id: new ObjectId(productId) });
     
-        if (!product) {
-          return res.status(404).send({ message: "Product not found" });
-        }
+    //     if (!product) {
+    //       return res.status(404).send({ message: "Product not found" });
+    //     }
     
-        // Prevent the product owner from upvoting their own product
-        if (product.owneremail === userEmail) {
-          return res.status(403).send({ message: "You cannot upvote your own product" });
-        }
+    //     // Prevent the product owner from upvoting their own product
+    //     if (product.owneremail === userEmail) {
+    //       return res.status(403).send({ message: "You cannot upvote your own product" });
+    //     }
     
-        // Check if user has already voted
-        const hasUpvoted = product.upvoters?.includes(userEmail);
+    //     // Check if user has already voted
+    //     const hasUpvoted = product.upvoters?.includes(userEmail);
     
-        if (hasUpvoted) {
-          return res.status(400).send({ message: "You have already upvoted this product" });
-        }
+    //     if (hasUpvoted) {
+    //       return res.status(400).send({ message: "You have already upvoted this product" });
+    //     }
     
-        // Update the product votes and add the user to upvoters array
-        const updateResult = await techcollection.updateOne(
-          { _id: new ObjectId(productId) },
-          {
-            $inc: { votes: 1 },
-            $push: { upvoters: userEmail },
-          }
-        );
+    //     // Update the product votes and add the user to upvoters array
+    //     const updateResult = await techcollection.updateOne(
+    //       { _id: new ObjectId(productId) },
+    //       {
+    //         $inc: { votes: 1 },
+    //         $push: { upvoters: userEmail },
+    //       }
+    //     );
     
-        if (updateResult.modifiedCount > 0) {
-          res.send({ message: "Upvote successful" });
-        } else {
-          res.status(500).send({ message: "Failed to upvote the product" });
-        }
-      } catch (error) {
-        console.error("Error upvoting product:", error);
-        res.status(500).send({ message: "Internal server error" });
-      }
-    });
+    //     if (updateResult.modifiedCount > 0) {
+    //       res.send({ message: "Upvote successful" });
+    //     } else {
+    //       res.status(500).send({ message: "Failed to upvote the product" });
+    //     }
+    //   } catch (error) {
+    //     console.error("Error upvoting product:", error);
+    //     res.status(500).send({ message: "Internal server error" });
+    //   }
+    // });
 
 
 
@@ -285,6 +264,33 @@ async function run() {
           admin = user?.role === 'admin'
         }
         res.send({admin})
+      })
+
+      app.patch('/users/moderator/:id', verifytoken ,async (req,res) => {
+        const id = req.params.id;
+        const filter = {_id: new ObjectId(id)};
+        const updatedDoc = {
+          $set: {
+            role: 'moderator'
+          }
+        }
+        const result = await usercollection.updateOne(filter, updatedDoc)
+        res.send(result)
+      })
+
+      app.get('/users/moderator/:email', verifytoken,  async (req,res) => {
+        const email = req.params.email;
+        if ( email !== req.decoded.email){
+          return res.status(403).send({message: 'unauthorized access'})
+        }
+
+        const query = {email: email}
+        const user = await usercollection.findOne(query)
+        let moderator = false;
+        if (user) {
+          moderator = user?.role === 'moderator'
+        }
+        res.send({moderator})
       })
 
     // Send a ping to confirm a successful connection
