@@ -3,13 +3,14 @@ const app = express();
 const cors = require("cors");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const port = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.c3mzl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -28,6 +29,8 @@ async function run() {
 
     const techcollection = client.db("tech-hub").collection("tech");
     const usercollection = client.db("tech-hub").collection("users");
+    const reviewcollection = client.db("tech-hub").collection("reviews");
+
 
     // jwt api 
 
@@ -84,12 +87,38 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/tech/:id', async(req,res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await techcollection.findOne(query)
-      res.send(result)
-    })
+   
+
+    app.get('/tech/:id', async (req, res) => {
+      const id = req.params.id;
+    
+      try {
+        // Validate the ID
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).send({ message: 'Invalid ID format' });
+        }
+    
+        // Create query with valid ObjectId
+        const query = { _id: new ObjectId(id) };
+    
+        // Fetch the document from the collection
+        const result = await techcollection.findOne(query);
+    
+        // Handle case where the document is not found
+        if (!result) {
+          return res.status(404).send({ message: 'Document not found' });
+        }
+    
+        res.status(200).send(result);
+      } catch (error) {
+        console.error('Error fetching document:', error);
+        res.status(500).send({ message: 'Internal server error', error });
+      }
+    });
+
+
+
+    
 
     // app.get('/tech/:owneremail',verifytoken,  async (req, res) => {
     //   try {
@@ -113,6 +142,74 @@ async function run() {
     //     res.status(500).send({ message: "An error occurred while fetching data." });
     //   }
     // });
+
+
+    // review apis 
+
+    app.post("/reviews", async (req, res) => {
+      const item = req.body;
+      // item.timestamp = new Date();
+
+      const result = await reviewcollection.insertOne(item);
+      res.send(result);
+    });
+
+
+    
+    
+    
+
+    // vote apis
+
+    app.post("/tech/upvote/:id",verifytoken, async (req, res) => {
+      const productId = req.params.id;
+      const userEmail = req.body.email;
+    
+      if (!ObjectId.isValid(productId)) {
+        return res.status(400).send({ message: "Invalid product ID" });
+      }
+    
+      try {
+        // Check if the user has already upvoted the product
+        const product = await techcollection.findOne({ _id: new ObjectId(productId) });
+    
+        if (!product) {
+          return res.status(404).send({ message: "Product not found" });
+        }
+    
+        // Prevent the product owner from upvoting their own product
+        if (product.owneremail === userEmail) {
+          return res.status(403).send({ message: "You cannot upvote your own product" });
+        }
+    
+        // Check if user has already voted
+        const hasUpvoted = product.upvoters?.includes(userEmail);
+    
+        if (hasUpvoted) {
+          return res.status(400).send({ message: "You have already upvoted this product" });
+        }
+    
+        // Update the product votes and add the user to upvoters array
+        const updateResult = await techcollection.updateOne(
+          { _id: new ObjectId(productId) },
+          {
+            $inc: { votes: 1 },
+            $push: { upvoters: userEmail },
+          }
+        );
+    
+        if (updateResult.modifiedCount > 0) {
+          res.send({ message: "Upvote successful" });
+        } else {
+          res.status(500).send({ message: "Failed to upvote the product" });
+        }
+      } catch (error) {
+        console.error("Error upvoting product:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
+
 
     // user api
 
