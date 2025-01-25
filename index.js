@@ -120,7 +120,7 @@ async function run() {
 
     
 
-    // app.get('/tech/:owneremail',verifytoken,  async (req, res) => {
+   
     //   try {
     //     // Extract the owner email from params and decoded token
     //     const owneremail = req.params.owneremail;
@@ -148,9 +148,14 @@ async function run() {
 
     app.post("/reviews", async (req, res) => {
       const item = req.body;
-      // item.timestamp = new Date();
+      item.timestamp = new Date();
 
       const result = await reviewcollection.insertOne(item);
+      res.send(result);
+    });
+
+    app.get("/reviews", async (req, res) => {
+      const result = await reviewcollection.find().sort({ timestamp: -1 }).toArray();
       res.send(result);
     });
 
