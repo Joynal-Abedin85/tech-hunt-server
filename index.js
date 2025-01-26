@@ -25,7 +25,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const techcollection = client.db("tech-hub").collection("tech");
     const usercollection = client.db("tech-hub").collection("users");
@@ -308,12 +308,26 @@ async function run() {
         res.send({moderator})
       })
 
+
+      app.get('/admin-stats', async (req, res) => {
+        try {
+          const users = await usercollection.estimatedDocumentCount();
+          const menuitem = await techcollection.estimatedDocumentCount();
+          res.send({ users, menuitem });
+        } catch (error) {
+          console.error("Error fetching admin stats:", error);
+          res.status(500).send({ error: "Failed to fetch admin stats." });
+        }
+      });
+      
+
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
+
     // Ensures that the client will close when you finish/error
     // await client.close();
   }
