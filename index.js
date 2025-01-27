@@ -30,6 +30,7 @@ async function run() {
     const techcollection = client.db("tech-hub").collection("tech");
     const usercollection = client.db("tech-hub").collection("users");
     const reviewcollection = client.db("tech-hub").collection("reviews");
+    const reportcollection = client.db("tech-hub").collection("reports");
 
 
     // jwt api 
@@ -126,8 +127,49 @@ async function run() {
 
 
 
+    // report api 
 
 
+    app.post("/reports", async (req, res) => {
+      try {
+        const { productId, reportedBy,productName } = req.body;
+    
+        if (!productId || !reportedBy) {
+          return res.status(400).json({ message: "Product ID and Reporter are required." });
+        }
+    
+        // Check if the product is already reported
+        const existingReport = await reportcollection.findOne({ productId });
+        if (existingReport) {
+          return res.status(400).json({ message: "This product has already been reported." });
+        }
+    
+        // Add the report to the database
+        const report = {
+          productId,
+          reportedBy,
+          timestamp: new Date(),
+          productName
+        };
+    
+        const result = await reportcollection.insertOne(report);
+    
+        if (result.insertedId) {
+          res.status(200).json({ success: true, message: "Product reported successfully." });
+        } else {
+          res.status(500).json({ success: false, message: "Failed to report product." });
+        }
+      } catch (error) {
+        console.error("Error reporting product:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    });
+    
+
+    app.get('/reports', async (req,res) => {
+      const result = await reportcollection.find().toArray()
+      res.send(result)
+    })
 
     
 
