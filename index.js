@@ -177,54 +177,38 @@ async function run() {
 
     // vote apis
 
-    // app.post("/tech/upvote/:id",verifytoken, async (req, res) => {
-    //   const productId = req.params.id;
-    //   const userEmail = req.body.email;
     
-    //   if (!ObjectId.isValid(productId)) {
-    //     return res.status(400).send({ message: "Invalid product ID" });
-    //   }
-    
-    //   try {
-    //     // Check if the user has already upvoted the product
-    //     const product = await techcollection.findOne({ _id: new ObjectId(productId) });
-    
-    //     if (!product) {
-    //       return res.status(404).send({ message: "Product not found" });
-    //     }
-    
-    //     // Prevent the product owner from upvoting their own product
-    //     if (product.owneremail === userEmail) {
-    //       return res.status(403).send({ message: "You cannot upvote your own product" });
-    //     }
-    
-    //     // Check if user has already voted
-    //     const hasUpvoted = product.upvoters?.includes(userEmail);
-    
-    //     if (hasUpvoted) {
-    //       return res.status(400).send({ message: "You have already upvoted this product" });
-    //     }
-    
-    //     // Update the product votes and add the user to upvoters array
-    //     const updateResult = await techcollection.updateOne(
-    //       { _id: new ObjectId(productId) },
-    //       {
-    //         $inc: { votes: 1 },
-    //         $push: { upvoters: userEmail },
-    //       }
-    //     );
-    
-    //     if (updateResult.modifiedCount > 0) {
-    //       res.send({ message: "Upvote successful" });
-    //     } else {
-    //       res.status(500).send({ message: "Failed to upvote the product" });
-    //     }
-    //   } catch (error) {
-    //     console.error("Error upvoting product:", error);
-    //     res.status(500).send({ message: "Internal server error" });
-    //   }
-    // });
 
+    app.post("/tech/:id/upvote", async (req, res) => {
+      const { id } = req.params;
+      const { userId } = req.body;
+    
+      if (!id || !userId) {
+        return res.status(400).json({ message: "Product ID or User ID is missing" });
+      }
+    
+      const product = await techcollection.findOne({ _id: new ObjectId(id) });
+    
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+    
+      if (product.votedUsers?.includes(userId)) {
+        return res.status(400).json({ message: "You have already voted on this product" });
+      }
+    
+      const result = await techcollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $inc: { votes: 1 }, $push: { votedUsers: userId } }
+      );
+    
+      if (result.modifiedCount > 0) {
+        res.status(200).json({ votes: product.votes + 1 });
+      } else {
+        res.status(500).json({ message: "Failed to update vote" });
+      }
+    });
+    
 
 
     // user api
