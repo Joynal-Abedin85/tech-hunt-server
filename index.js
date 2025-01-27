@@ -132,7 +132,7 @@ async function run() {
 
     app.post("/reports", async (req, res) => {
       try {
-        const { productId, reportedBy,productName } = req.body;
+        const { productId, reportedBy,productName ,image,votes,tags} = req.body;
     
         if (!productId || !reportedBy) {
           return res.status(400).json({ message: "Product ID and Reporter are required." });
@@ -149,7 +149,10 @@ async function run() {
           productId,
           reportedBy,
           timestamp: new Date(),
-          productName
+          productName,
+          image,
+          votes,
+          tags
         };
     
         const result = await reportcollection.insertOne(report);
@@ -170,6 +173,32 @@ async function run() {
       const result = await reportcollection.find().toArray()
       res.send(result)
     })
+
+
+    app.delete("/reports/:id", async (req, res) => {
+      const { id } = req.params;
+    
+      try {
+        // Delete the product from techcollection
+        const techResult = await techcollection.deleteOne({ _id: new ObjectId(id) });
+    
+        // Delete the product from reportcollection
+        const reportResult = await reportcollection.deleteOne({ productId: id });
+    
+        if (techResult.deletedCount > 0) {
+          res.status(200).json({
+            message: "Product deleted successfully",
+            techDeleted: techResult.deletedCount,
+            reportDeleted: reportResult.deletedCount,
+          });
+        } else {
+          res.status(404).json({ message: "Product not found" });
+        }
+      } catch (error) {
+        console.error("Error deleting product:", error);
+        res.status(500).json({ message: "Failed to delete product", error });
+      }
+    });
 
     
 
