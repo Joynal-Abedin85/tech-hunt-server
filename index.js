@@ -31,7 +31,13 @@ async function run() {
     const usercollection = client.db("tech-hub").collection("users");
     const reviewcollection = client.db("tech-hub").collection("reviews");
     const reportcollection = client.db("tech-hub").collection("reports");
+    const acceptcollection = client.db("tech-hub").collection("accept-product");
 
+
+
+
+
+   
 
     // jwt api 
 
@@ -72,6 +78,50 @@ async function run() {
         }
         next()
       }
+
+
+       // accept product 
+
+    app.post("/accept-product", async (req, res) => {
+      const { productId } = req.body;
+    
+      if (!productId) {
+        return res.status(400).json({ success: false, message: "Product ID is required" });
+      }
+    
+      try {
+        // Fetch the product from the `techCollection`
+        const product = await techcollection.findOne({ _id: new ObjectId(productId) });
+    
+        if (!product) {
+          return res.status(404).json({ success: false, message: "Product not found" });
+        }
+    
+        // Add the product to the `acceptCollection`
+        const result = await acceptcollection.insertOne(product);
+    
+        if (result.insertedId) {
+          // Update the product status in the `techCollection`
+          await techcollection.updateOne(
+            { _id: new ObjectId(productId) },
+            { $set: { status: "Accepted" } }
+          );
+    
+          return res.status(200).json({ success: true, message: "Product accepted successfully" });
+        }
+    
+        res.status(500).json({ success: false, message: "Failed to accept product" });
+      } catch (error) {
+        console.error("Error accepting product:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+      }
+    });
+    
+
+    app.get("/accept-product", async (req, res) => {
+      const result = await acceptcollection.find().sort({ timestamp: -1 }).toArray();
+      res.send(result);
+    });
 
     // tech api
 
