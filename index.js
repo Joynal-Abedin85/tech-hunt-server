@@ -176,6 +176,28 @@ async function run() {
     })
 
 
+    app.put("/tech/:id", async (req, res) => {
+      const { id } = req.params;
+      const updatedData = req.body;
+    
+      try {
+        const result = await techcollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedData }
+        );
+    
+        if (result.modifiedCount > 0) {
+          res.status(200).json({ message: "Product updated successfully" });
+        } else {
+          res.status(400).json({ message: "No changes made or product not found" });
+        }
+      } catch (error) {
+        console.error("Error updating product:", error);
+        res.status(500).json({ message: "Failed to update product" });
+      }
+    });
+
+
 
     // report api 
 
