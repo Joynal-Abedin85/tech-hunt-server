@@ -322,7 +322,7 @@ async function run() {
 
     
 
-    app.post("/tech/:id/upvote", async (req, res) => {
+    app.post("/accept-product/:id/upvote", async (req, res) => {
       const { id } = req.params;
       const { userId } = req.body;
     
@@ -330,7 +330,7 @@ async function run() {
         return res.status(400).json({ message: "Product ID or User ID is missing" });
       }
     
-      const product = await techcollection.findOne({ _id: new ObjectId(id) });
+      const product = await acceptcollection.findOne({ _id: new ObjectId(id) });
     
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
@@ -340,7 +340,7 @@ async function run() {
         return res.status(400).json({ message: "You have already voted on this product" });
       }
     
-      const result = await techcollection.updateOne(
+      const result = await acceptcollection.updateOne(
         { _id: new ObjectId(id) },
         { $inc: { votes: 1 }, $push: { votedUsers: userId } }
       );
